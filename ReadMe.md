@@ -120,4 +120,5 @@ Also, see `ReadMe.md` files inside those directories for further details.
 
 - Discord: [discord.gg/97vH4hFZY6](https://discord.gg/97vH4hFZY6)
 - Website: [encore-zero.dev](https://encore-zero.dev)
-- Update Server: [directory.json](https://update.encore-zero.dev/firmware/directory.json)
+- Update Server: [builds/firmware](https://up.encore-zero.dev/builds/firmware)
+- Update Indexer: [directory.json](https://up.encore-zero.dev/firmware/directory.json)

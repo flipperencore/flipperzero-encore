@@ -11,6 +11,7 @@ on:
 env:
   DEFAULT_TARGET: f7
   FBT_GIT_SUBMODULE_SHALLOW: 1
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -86,12 +87,36 @@ jobs:
       - name: 'Upload artifacts to update server'
         if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
+          curl "${{ secrets.INDEXER_URL }}"/firmware/directory.json > previndex.json
           FILES=$(for ARTIFACT in $(find artifacts -maxdepth 1 -not -type d); do echo "-F files=@${ARTIFACT}"; done)
           curl --fail -L -H "Token: ${{ secrets.INDEXER_TOKEN }}" \
               -F "branch=${BRANCH_NAME}" \
               -F "version_token=${COMMIT_SHA}" \
               ${FILES[@]} \
               "${{ secrets.INDEXER_URL }}"/firmware/uploadfiles
+
+      - name: 'Calculate DFU sizes'
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
+        run: |
+          curl -L "${{ secrets.INDEXER_URL }}"/firmware/development/f7/full_dfu -o dev.dfu
+          dfu_size_new=$(stat -c%s artifacts/flipper-z-${TARGET}-full-*.dfu)
+          dfu_size_dev=$(stat -c%s dev.dfu)
+          dfu_size_diff=$((dfu_size_new - dfu_size_dev))
+          DFU_SIZE=$(echo $dfu_size_new | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          DFU_DIFF=$(echo $dfu_size_diff | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/' | sed -r 's/^([^-])/+\1/')
+          echo "DFU_SIZE=$DFU_SIZE" >> $GITHUB_ENV
+          echo "DFU_DIFF=$DFU_DIFF" >> $GITHUB_ENV
+
+          tar xzf build/core2_firmware.tgz
+          radio_addr=$(jq -r '.copro.radio.files[0].address' core2_firmware/Manifest.json)
+          flash_base=0x8000000
+          min_gap=$((0 * 4 * 1024))
+          flash_free_total=$((radio_addr - flash_base - dfu_size_new))
+          flash_free_usable=$((flash_free_total - min_gap))
+          FLASH_FREE=$(echo $flash_free_total | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          FLASH_USABLE=$(echo $flash_free_usable | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          echo "FLASH_FREE=$FLASH_FREE" >> $GITHUB_ENV
+          echo "FLASH_USABLE=$FLASH_USABLE" >> $GITHUB_ENV
 
       - name: 'Find previous comment'
         if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
@@ -110,9 +135,15 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             **Compiled ${{ matrix.target }} firmware for commit `${{steps.names.outputs.commit_sha}}`:**
-            - [📦 Update package](https://update.encore-zero.dev/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz)
-            - [📥 DFU file](https://update.encore-zero.dev/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-full-${{steps.names.outputs.suffix}}.dfu)
-            - [☁️ Web/App updater](https://lab.flipper.net/?url=https://update.encore-zero.dev/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz&channel=${{steps.names.outputs.branch_name}}&version=${{steps.names.outputs.commit_sha}})
+            - [☁️ Web/App updater](https://lab.flipper.net/?url=${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz&channel=${{steps.names.outputs.branch_name}}&version=${{steps.names.outputs.commit_sha}})
+            - [📦 Update package](${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz)
+            - [📥 Developer SDK](${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-sdk-${{steps.names.outputs.suffix}}.zip)
+            - 🛠️ Configure uFBT:
+              ```
+              ufbt update --index-url ${{secrets.INDEXER_URL}}/builds/firmware --branch ${{steps.names.outputs.branch_name}}
+              ```
+            - DFU Size: `${{ env.DFU_SIZE }}` (`${{ env.DFU_DIFF }}` from dev)
+            - Free Flash: `${{ env.FLASH_FREE }}` (`${{ env.FLASH_USABLE }}` usable)
           edit-mode: replace
 
       # - name: 'SDK submission to staging catalog'
