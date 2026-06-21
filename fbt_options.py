@@ -3,7 +3,7 @@ import posixpath
 
 # For more details on these options, run 'fbt -h'
 
-FIRMWARE_ORIGIN = "Official"
+FIRMWARE_ORIGIN = "Encore"
 
 # Default hardware target
 TARGET_HW = 7
@@ -76,6 +76,7 @@ FIRMWARE_APPS = {
         "radio_device_cc1101_ext",
         "unit_tests",
         "js_app",
+        "infrared",
         "archive",
     ],
 }

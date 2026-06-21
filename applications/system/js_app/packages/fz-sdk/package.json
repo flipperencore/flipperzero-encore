@@ -1,8 +1,11 @@
 {
-  "name": "@flipperdevices/fz-sdk",
+  "name": "@flipperencore/fz-sdk-encr",
   "version": "1.0.0",
-  "description": "Type declarations and documentation for native JS modules available on Flipper Zero",
+  "description": "Type declarations and documentation for native JS modules available on Encore Firmware for Flipper Zero",
   "keywords": [
+    "encore",
+    "encore firmware",
+    "flipperencore",
     "flipper",
     "flipper zero",
     "framework"
@@ -11,7 +14,7 @@
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flipperdevices/flipperzero-firmware.git",
+    "url": "git+https://github.com/flipperencore/flipperzero-encore.git",
     "directory": "applications/system/js_app/packages/fz-sdk"
   },
   "type": "module",
