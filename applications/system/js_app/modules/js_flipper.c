@@ -37,7 +37,7 @@ void* js_flipper_create(struct mjs* mjs, mjs_val_t* object, JsModules* modules) 
         JS_FIELD("getModel", MJS_MK_FN(js_flipper_get_model));
         JS_FIELD("getName", MJS_MK_FN(js_flipper_get_name));
         JS_FIELD("getBatteryCharge", MJS_MK_FN(js_flipper_get_battery));
-        JS_FIELD("firmwareVendor", mjs_mk_string(mjs, JS_SDK_VENDOR, ~0, false));
+        JS_FIELD("firmwareVendor", mjs_mk_string(mjs, JS_SDK_VENDOR_FIRMWARE, ~0, false));
         JS_FIELD("jsSdkVersion", sdk_vsn);
     }
 

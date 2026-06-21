@@ -10,6 +10,6 @@ tests.assert_eq("firmwareTooNew", sdkCompatibilityStatus(-100500, 0));
 tests.assert_eq(true, doesSdkSupport(["baseline"]));
 tests.assert_eq(false, doesSdkSupport(["abobus", "other-nonexistent-feature"]));
 
-tests.assert_eq("flipperdevices", flipper.firmwareVendor);
+tests.assert_eq("encore", flipper.firmwareVendor);
 tests.assert_eq(1, flipper.jsSdkVersion[0]);
 tests.assert_eq(0, flipper.jsSdkVersion[1]);

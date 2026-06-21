@@ -4,21 +4,17 @@ on:
   pull_request:
 
 env:
-  FBT_TOOLCHAIN_PATH: /runner/_work
   FBT_GIT_SUBMODULE_SHALLOW: 1
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   compact:
-    runs-on: [self-hosted, FlipperZeroShell]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        target: [f7, f18]
+        target: [f7]
     steps:
-      - name: 'Wipe workspace'
-        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
-
       - name: 'Checkout code'
         uses: actions/checkout@v4
         with:
@@ -47,7 +43,7 @@ jobs:
           echo "hw-target-code=$TARGET" >> $GITHUB_OUTPUT
 
       - name: Deploy uFBT with SDK
-        uses: flipperdevices/flipperzero-ufbt-action@v0.1
+        uses: flipperencore/flipperzero-ufbt-action@v0.1
         with:
           task: setup
           sdk-file: ${{ steps.build-fw.outputs.sdk-file }}
@@ -77,7 +73,7 @@ jobs:
             done
           done
 
-## Uncomment this for a single job that will run only if all targets are built successfully          
+## Uncomment this for a single job that will run only if all targets are built successfully
 #  report-status:
 #    name: Report status
 #    needs: [compact]

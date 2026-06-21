@@ -1,11 +1,22 @@
-# Flipper Zero JavaScript SDK
-This package contains official tooling and typings for developing Flipper Zero
-applications in JavaScript.
+# Encore FW JavaScript SDK
+This package contains tooling and typings for developing Flipper Zero
+applications in JavaScript for Encore Firmware.
+
+This is a fork of the [Official Flipper Zero JS SDK](https://www.npmjs.com/package/@flipperdevices/fz-sdk),
+with added types for the extra features provided by the Encore JavaScript API.
+
+Scripts made for Official Flipper Zero JS SDK will work on Encore Firmware too.
+If you use extra features provided by Encore, you are encouraged to use syntax like
+`if (doesSdkSupport(["feature-name"])) { ... }` so that your JS app can work on Official
+Firmware too, aswell as all other compliant Custom Firmwares. If some of those extra
+features are essential to the functionality of your app, you can use `checkSdkFeatures(["feature1", "feature2"])`
+near the beginning of your script, which will show a warning to the user that these features
+are not available in their firmware distribution.
 
 ## Getting started
 Create your application using the interactive wizard:
 ```shell
-npx @flipperdevices/create-fz-app@latest
+npx @flipperencore/create-fz-app-encr@latest
 ```
 
 Then, enter the directory with your application and launch it:

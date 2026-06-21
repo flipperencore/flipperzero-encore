@@ -5,7 +5,7 @@ It also covers basic GUI, input handling, threads and localisation.
 
 ## Source code
 
-Source code for this example can be found [here](https://github.com/flipperdevices/flipperzero-firmware/tree/dev/applications/examples/example_thermo).
+Source code for this example can be found [here](https://github.com/flipperencore/flipperzero-encore/tree/dev/applications/examples/example_thermo).
 
 ## Electrical connections
 
