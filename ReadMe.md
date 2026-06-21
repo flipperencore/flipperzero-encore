@@ -1,17 +1,24 @@
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/.github/assets/dark_theme_banner.png">
-    <source media="(prefers-color-scheme: light)" srcset="/.github/assets/light_theme_banner.png">
-    <img
-        alt="A pixel art of a Dophin with text: Flipper Zero Official Repo"
-        src="/.github/assets/light_theme_banner.png">
-</picture>
+# Encore Firmware for Flipper Zero
 
-# Flipper Zero Firmware
+This project is not affiliated with Flipper Devices. Encore is the community's answer to [Flipper Devices abandoning Flipper Zero](https://spicemesh.de/posts/open-call-to-flipper/).
 
-- [Flipper Zero Official Website](https://flipperzero.one). A simple way to explain to your friends what Flipper Zero can do.
-- [Flipper Zero Firmware Update](https://flipperzero.one/update). Improvements for your dolphin: latest firmware releases, upgrade tools for PC and mobile devices.
-- [User Documentation](https://docs.flipper.net). Learn more about your dolphin: specs, usage guides, and anything you want to ask.
-- [Developer Documentation](https://developer.flipper.net/flipperzero/doxygen). Dive into the Flipper Zero Firmware source code: build system, firmware structure, and more.
+We aim to unofficially replace the official firmware, becoming an updated basis for users to use, app developers to target, and custom firmwares to base off of.
+
+We plan to have updated forks, with new features and fixes, of:
+- Flipper Zero Firmware (this repo)
+- Flipper Lab
+- Flipper Mobile Apps
+- qFlipper
+- Flipper App Catalog
+- Flipper JS SDK
+- Flipper Docs and Developer Docs
+
+while removing all reliance on Flipper Devices.
+
+Encore will not be a traditional "custom firmware", it just aims to be an updated version of official firmware without many frills and distractions, just good and stable updates without re-inventing the wheel - like the official firmware would've continued to be if it wasn't abandoned.
+
+These plans are ambitious and will require time to reach, but we are determined to do what Flipper Devices have proven unable and/or uninterested to do.\
+<sub>Our frustration is aimed at Flipper Devices as an entity; we are extremely thankful for and admire the amazing work done by official firmware developers, it is the people in charge that we take issue with.</sub>
 
 # Contributing
 
@@ -19,27 +26,23 @@ Our main goal is to build a healthy and sustainable community around Flipper, so
 
 ## I need help
 
-The best place to search for answers is our [User Documentation](https://docs.flipper.net). If you can't find the answer there, check our [Discord Server](https://flipp.dev/discord) or our [Forum](https://forum.flipperzero.one/). If you want to contribute to the firmware development or modify it for your own needs, you can also check our [Developer Documentation](https://developer.flipper.net/flipperzero/doxygen).
+The best place to search for answers is our [User Documentation](https://docs.flipper.net). If you can't find the answer there, check our [Discord Server](https://discord.gg/97vH4hFZY6). If you want to contribute to the firmware development or modify it for your own needs, you can also check our [Developer Documentation](https://developer.flipper.net/flipperzero/doxygen).
 
 ## I want to report an issue
 
-If you've found an issue and want to report it, please check our [Issues](https://github.com/flipperdevices/flipperzero-firmware/issues) page. Make sure the description contains information about the firmware version you're using, your platform, and a clear explanation of the steps to reproduce the issue.
+If you've found an issue and want to report it, please check our [Issues](https://github.com/flipperencore/flipperzero-encore/issues) page. Make sure the description contains information about the firmware version you're using, your platform, and a clear explanation of the steps to reproduce the issue.
 
 ## I want to contribute code
 
-Before opening a PR, please confirm that your changes must be contained in the firmware. Many ideas can easily be implemented as external applications and published in the [Flipper Application Catalog](https://github.com/flipperdevices/flipper-application-catalog). If you are unsure, reach out to us on the [Discord Server](https://flipp.dev/discord) or the [Issues](https://github.com/flipperdevices/flipperzero-firmware/issues) page, and we'll help you find the right place for your code.
+Before opening a PR, please confirm that your changes must be contained in the firmware. Many ideas can easily be implemented as external applications and published in the [Flipper Application Catalog](https://github.com/flipperdevices/flipper-application-catalog). If you are unsure, reach out to us on the [Discord Server](https://discord.gg/97vH4hFZY6) or the [Issues](https://github.com/flipperencore/flipperzero-encore/issues) page, and we'll help you find the right place for your code.
 
 Also, please read our [Contribution Guide](/CONTRIBUTING.md) and our [Coding Style](/CODING_STYLE.md), and make sure your code is compatible with our [Project License](/LICENSE).
 
-Finally, open a [Pull Request](https://github.com/flipperdevices/flipperzero-firmware/pulls) and make sure that CI/CD statuses are all green.
+Finally, open a [Pull Request](https://github.com/flipperencore/flipperzero-encore/pulls) and make sure that CI/CD statuses are all green.
 
 # Development
 
 Flipper Zero Firmware is written in C, with some bits and pieces written in C++ and armv7m assembly languages. An intermediate level of C knowledge is recommended for comfortable programming. C, C++, and armv7m assembly languages are supported for Flipper applications.
-
-# Firmware RoadMap
-
-[Firmware RoadMap Miro Board](https://miro.com/app/board/uXjVO_3D6xU=/)
 
 ## Requirements
 
@@ -63,7 +66,7 @@ Flipper Build System will take care of all the other dependencies.
 Make sure you have enough space and clone the source code:
 
 ```shell
-git clone --recursive https://github.com/flipperdevices/flipperzero-firmware.git
+git clone --recursive https://github.com/flipperencore/flipperzero-encore.git
 ```
 
 ## Building
@@ -87,7 +90,7 @@ Connect your in-circuit debugger to your Flipper and flash firmware using Flippe
 Make sure your Flipper is on, and your firmware is functioning. Connect your Flipper with a USB cable and flash firmware using Flipper Build Tool:
 
 ```shell
-./fbt flash_usb
+./fbt flash_usb_full
 ```
 
 ## Documentation
@@ -97,30 +100,25 @@ Make sure your Flipper is on, and your firmware is functioning. Connect your Fli
 - [Hardware combos and Un-bricking](/documentation/KeyCombo.md) - recovering your Flipper from the most nasty situations
 - [Flipper File Formats](/documentation/file_formats) - everything about how Flipper stores your data and how you can work with it
 - [Universal Remotes](/documentation/UniversalRemotes.md) - contributing your infrared remote to the universal remote database
-- [Firmware Roadmap](https://miro.com/app/board/uXjVO_3D6xU=/)
 - And much more in the [Developer Documentation](https://developer.flipper.net/flipperzero/doxygen)
 
 # Project structure
 
 - `applications`        - Applications and services used in firmware
-- `applications_users`  - Place for your additional applications and services
+- `applications_user`   - Place for your additional applications and services
 - `assets`              - Assets used by applications and services
 - `documentation`       - Documentation generation system configs and input files
 - `furi`                - Furi Core: OS-level primitives and helpers
 - `lib`                 - Our and 3rd party libraries, drivers, tools and etc...
-- `site_scons`          - Build system configuration and modules
 - `scripts`             - Supplementary scripts and various python libraries
+- `site_scons`          - Build system configuration and modules
 - `targets`             - Firmware targets: platform specific code
 
 Also, see `ReadMe.md` files inside those directories for further details.
 
 # Links
 
-- Discord: [flipp.dev/discord](https://flipp.dev/discord)
-- Website: [flipperzero.one](https://flipperzero.one)
-- Forum: [forum.flipperzero.one](https://forum.flipperzero.one/)
-- Kickstarter: [kickstarter.com](https://www.kickstarter.com/projects/flipper-devices/flipper-zero-tamagochi-for-hackers)
-
-## SAST Tools
-
-- [PVS-Studio](https://pvs-studio.com/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.
+- Discord: [discord.gg/97vH4hFZY6](https://discord.gg/97vH4hFZY6)
+- Website: [encore-zero.dev](https://encore-zero.dev)
+- Update Server: [builds/firmware](https://up.encore-zero.dev/builds/firmware)
+- Update Indexer: [directory.json](https://up.encore-zero.dev/firmware/directory.json)
