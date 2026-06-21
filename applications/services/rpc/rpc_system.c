@@ -222,7 +222,7 @@ static void rpc_system_system_protobuf_version_process(const PB_Main* request, v
     response->command_status = PB_CommandStatus_OK;
     response->which_content = PB_Main_system_protobuf_version_response_tag;
     /* build error here means something wrong with tags in
-     * local repo https://github.com/flipperdevices/flipperzero-protobuf */
+     * local repo https://github.com/flipperencore/flipperzero-protobuf */
     response->content.system_protobuf_version_response.major = PROTOBUF_MAJOR_VERSION;
     response->content.system_protobuf_version_response.minor = PROTOBUF_MINOR_VERSION;
 

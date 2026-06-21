@@ -1,9 +1,9 @@
 // import modules
 // caution: `eventLoop` HAS to be imported before `gui`, and `gui` HAS to be
 // imported before any `gui` submodules.
-import * as eventLoop from "@flipperdevices/fz-sdk/event_loop";
-import * as gui from "@flipperdevices/fz-sdk/gui";
-import * as dialog from "@flipperdevices/fz-sdk/gui/dialog";
+import * as eventLoop from "@flipperencore/fz-sdk-encr/event_loop";
+import * as gui from "@flipperencore/fz-sdk-encr/gui";
+import * as dialog from "@flipperencore/fz-sdk-encr/gui/dialog";
 
 // a common pattern is to declare all the views that your app uses on one object
 const views = {

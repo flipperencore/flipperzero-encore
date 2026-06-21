@@ -8,7 +8,7 @@
         "types": [],
     },
     "files": [
-        "./node_modules/@flipperdevices/fz-sdk/global.d.ts",
+        "./node_modules/@flipperencore/fz-sdk-encr/global.d.ts",
     ],
     "include": [
         "./**/*.ts",
