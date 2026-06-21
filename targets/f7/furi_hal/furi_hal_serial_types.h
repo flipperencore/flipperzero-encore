@@ -51,7 +51,7 @@ typedef enum {
     FuriHalSerialStopBits1_5,
     FuriHalSerialStopBits2,
 
-    FuriHalSerialStopBits2Max,
+    FuriHalSerialStopBitsMax,
 } FuriHalSerialStopBits;
 
 typedef struct FuriHalSerialHandle FuriHalSerialHandle;
