@@ -10,21 +10,20 @@ on:
 
 env:
   DEFAULT_TARGET: f7
-  FBT_TOOLCHAIN_PATH: /runner/_work
   FBT_GIT_SUBMODULE_SHALLOW: 1
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  main:
-    runs-on: [self-hosted, FlipperZeroShell]
+  build:
+    permissions:
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        target: [f7, f18]
+        target: [f7]
     steps:
-      - name: 'Wipe workspace'
-        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
-
       - name: 'Checkout code'
         uses: actions/checkout@v4
         with:
@@ -73,25 +72,22 @@ jobs:
       - name: 'Copy build output'
         run: |
           set -e
-          rm -rf artifacts map_analyser_files || true
-          mkdir artifacts map_analyser_files
-          cp dist/${TARGET}-*/* artifacts/ || true
+          rm -rf artifacts || true
+          mkdir artifacts
+          cp dist/${TARGET}-*/flipper-z-${TARGET}-{update-*.tgz,sdk-*.zip,full-*.dfu} artifacts/
           tar czpf "artifacts/flipper-z-${TARGET}-resources-${SUFFIX}.tgz" \
             -C build/latest resources
-          tar czpf "artifacts/flipper-z-${TARGET}-debugapps-${SUFFIX}.tgz" \
-            -C dist/${TARGET}-*/apps/Debug .
-          tar czpf "artifacts/flipper-z-${TARGET}-appsymbols-${SUFFIX}.tgz" \
-            -C dist/${TARGET}-*/debug_elf .
 
       - name: 'Copy universal artifacts'
-        if: ${{ !github.event.pull_request.head.repo.fork && matrix.target == env.DEFAULT_TARGET }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET }}
         run: |
           tar czpf "artifacts/flipper-z-any-scripts-${SUFFIX}.tgz" scripts
           cp build/core2_firmware.tgz "artifacts/flipper-z-any-core2_firmware-${SUFFIX}.tgz"
 
       - name: 'Upload artifacts to update server'
-        if: ${{ !github.event.pull_request.head.repo.fork }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
+          curl "${{ secrets.INDEXER_URL }}"/firmware/directory.json > previndex.json
           FILES=$(for ARTIFACT in $(find artifacts -maxdepth 1 -not -type d); do echo "-F files=@${ARTIFACT}"; done)
           curl --fail -L -H "Token: ${{ secrets.INDEXER_TOKEN }}" \
               -F "branch=${BRANCH_NAME}" \
@@ -99,20 +95,31 @@ jobs:
               ${FILES[@]} \
               "${{ secrets.INDEXER_URL }}"/firmware/uploadfiles
 
-      - name: 'Copy & analyse map analyser files'
-        if: ${{ !github.event.pull_request.head.repo.fork && matrix.target == env.DEFAULT_TARGET }}
+      - name: 'Calculate DFU sizes'
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
         run: |
-          cp build/${DEFAULT_TARGET}-firmware-*/firmware.elf.map map_analyser_files/firmware.elf.map
-          cp build/${DEFAULT_TARGET}-firmware-*/firmware.elf map_analyser_files/firmware.elf
-          source scripts/toolchain/fbtenv.sh
-          python3 scripts/map_analyse_upload.py \
-              "--elf_file=map_analyser_files/firmware.elf" \
-              "--map_file=map_analyser_files/firmware.elf.map" \
-              "--analyser_url=${{ secrets.ANALYSER_URL }}" \
-              "--analyser_token=${{ secrets.ANALYSER_TOKEN }}";
+          curl -L "${{ secrets.INDEXER_URL }}"/firmware/development/f7/full_dfu -o dev.dfu
+          dfu_size_new=$(stat -c%s artifacts/flipper-z-${TARGET}-full-*.dfu)
+          dfu_size_dev=$(stat -c%s dev.dfu)
+          dfu_size_diff=$((dfu_size_new - dfu_size_dev))
+          DFU_SIZE=$(echo $dfu_size_new | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          DFU_DIFF=$(echo $dfu_size_diff | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/' | sed -r 's/^([^-])/+\1/')
+          echo "DFU_SIZE=$DFU_SIZE" >> $GITHUB_ENV
+          echo "DFU_DIFF=$DFU_DIFF" >> $GITHUB_ENV
+
+          tar xzf build/core2_firmware.tgz
+          radio_addr=$(jq -r '.copro.radio.files[0].address' core2_firmware/Manifest.json)
+          flash_base=0x8000000
+          min_gap=$((0 * 4 * 1024))
+          flash_free_total=$((radio_addr - flash_base - dfu_size_new))
+          flash_free_usable=$((flash_free_total - min_gap))
+          FLASH_FREE=$(echo $flash_free_total | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          FLASH_USABLE=$(echo $flash_free_usable | numfmt --to=iec-i --format=%.2fB | sed 's/.00B$/B/')
+          echo "FLASH_FREE=$FLASH_FREE" >> $GITHUB_ENV
+          echo "FLASH_USABLE=$FLASH_USABLE" >> $GITHUB_ENV
 
       - name: 'Find previous comment'
-        if: ${{ !github.event.pull_request.head.repo.fork && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
         uses: peter-evans/find-comment@v3
         id: find-comment
         with:
@@ -121,35 +128,40 @@ jobs:
           body-includes: 'Compiled ${{ matrix.target }} firmware for commit'
 
       - name: 'Create or update comment'
-        if: ${{ !github.event.pull_request.head.repo.fork && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && matrix.target == env.DEFAULT_TARGET && github.event.pull_request }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             **Compiled ${{ matrix.target }} firmware for commit `${{steps.names.outputs.commit_sha}}`:**
-            - [📦 Update package](https://update.flipperzero.one/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz)
-            - [📥 DFU file](https://update.flipperzero.one/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-full-${{steps.names.outputs.suffix}}.dfu)
-            - [☁️ Web/App updater](https://lab.flipper.net/?url=https://update.flipperzero.one/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz&channel=${{steps.names.outputs.branch_name}}&version=${{steps.names.outputs.commit_sha}})
-            - [📊 Size report](https://fw-reports.flipp.dev/?branch=${{steps.names.outputs.branch_name}})
+            - [☁️ Web/App updater](https://lab.flipper.net/?url=${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz&channel=${{steps.names.outputs.branch_name}}&version=${{steps.names.outputs.commit_sha}})
+            - [📦 Update package](${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-update-${{steps.names.outputs.suffix}}.tgz)
+            - [📥 Developer SDK](${{secrets.INDEXER_URL}}/builds/firmware/${{steps.names.outputs.branch_name}}/flipper-z-${{steps.names.outputs.default_target}}-sdk-${{steps.names.outputs.suffix}}.zip)
+            - 🛠️ Configure uFBT:
+              ```
+              ufbt update --index-url ${{secrets.INDEXER_URL}}/builds/firmware --branch ${{steps.names.outputs.branch_name}}
+              ```
+            - DFU Size: `${{ env.DFU_SIZE }}` (`${{ env.DFU_DIFF }}` from dev)
+            - Free Flash: `${{ env.FLASH_FREE }}` (`${{ env.FLASH_USABLE }}` usable)
           edit-mode: replace
 
-      - name: 'SDK submission to staging catalog'
-        if: ${{ steps.names.outputs.event_type == 'tag' && matrix.target == env.DEFAULT_TARGET }}
-        uses: ./.github/actions/submit_sdk
-        with:
-          catalog-url: ${{ secrets.CATALOG_STAGING_URL }}
-          catalog-api-token: ${{ secrets.CATALOG_STAGING_API_TOKEN }}
-          firmware-api: ${{ steps.build-fw.outputs.firmware_api }}
-          firmware-target: ${{ matrix.target }}
-          firmware-version: ${{ steps.names.outputs.suffix }}
+      # - name: 'SDK submission to staging catalog'
+      #   if: ${{ steps.names.outputs.event_type == 'tag' && matrix.target == env.DEFAULT_TARGET }}
+      #   uses: ./.github/actions/submit_sdk
+      #   with:
+      #     catalog-url: ${{ secrets.CATALOG_STAGING_URL }}
+      #     catalog-api-token: ${{ secrets.CATALOG_STAGING_API_TOKEN }}
+      #     firmware-api: ${{ steps.build-fw.outputs.firmware_api }}
+      #     firmware-target: ${{ matrix.target }}
+      #     firmware-version: ${{ steps.names.outputs.suffix }}
 
-      - name: 'SDK submission to prod catalog'
-        if: ${{ steps.names.outputs.event_type == 'tag' && matrix.target == env.DEFAULT_TARGET }}
-        uses: ./.github/actions/submit_sdk
-        with:
-          catalog-url: ${{ secrets.CATALOG_URL }}
-          catalog-api-token: ${{ secrets.CATALOG_API_TOKEN }}
-          firmware-api: ${{ steps.build-fw.outputs.firmware_api }}
-          firmware-target: ${{ matrix.target }}
-          firmware-version: ${{ steps.names.outputs.suffix }}
+      # - name: 'SDK submission to prod catalog'
+      #   if: ${{ steps.names.outputs.event_type == 'tag' && matrix.target == env.DEFAULT_TARGET }}
+      #   uses: ./.github/actions/submit_sdk
+      #   with:
+      #     catalog-url: ${{ secrets.CATALOG_URL }}
+      #     catalog-api-token: ${{ secrets.CATALOG_API_TOKEN }}
+      #     firmware-api: ${{ steps.build-fw.outputs.firmware_api }}
+      #     firmware-target: ${{ matrix.target }}
+      #     firmware-version: ${{ steps.names.outputs.suffix }}

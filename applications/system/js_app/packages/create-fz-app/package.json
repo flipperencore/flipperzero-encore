@@ -1,10 +1,13 @@
 {
-  "name": "@flipperdevices/create-fz-app",
+  "name": "@flipperencore/create-fz-app-encr",
   "version": "0.1.2",
-  "description": "Template package for JS apps Flipper Zero",
+  "description": "Template package for JS apps Flipper Zero using Encore Firmware JS SDK",
   "bin": "index.js",
   "type": "module",
   "keywords": [
+    "encore",
+    "encore firmware",
+    "flipperencore",
     "flipper",
     "flipper zero"
   ],
@@ -12,7 +15,7 @@
   "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flipperdevices/flipperzero-firmware.git",
+    "url": "git+https://github.com/flipperencore/flipperzero-encore.git",
     "directory": "applications/system/js_app/packages/create-fz-app"
   },
   "dependencies": {
