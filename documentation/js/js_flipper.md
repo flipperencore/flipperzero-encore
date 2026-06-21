@@ -10,7 +10,7 @@ let flipper = require("flipper");
 
 ## firmwareVendor
 String representing the firmware installed on the device.
-Original firmware reports `"flipperdevices"`.
+Encore firmware report `"encore"`. Official firmware reports `"flipperdevices"`.
 Do **NOT** use this to check the presence or absence of features, refer to [other ways to check SDK compatibility](#js_builtin_sdk_compatibility).
 
 ## jsSdkVersion

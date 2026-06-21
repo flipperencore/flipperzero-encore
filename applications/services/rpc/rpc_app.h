@@ -8,7 +8,7 @@
  * All commands are handled asynchronously via a user-settable callback.
  *
  * For a complete description of message types handled in this subsystem,
- * see https://github.com/flipperdevices/flipperzero-protobuf/blob/dev/application.proto
+ * see https://github.com/flipperencore/flipperzero-protobuf/blob/dev/application.proto
  */
 #pragma once
 

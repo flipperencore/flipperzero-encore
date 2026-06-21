@@ -10,7 +10,7 @@ For example:
 JS modules are written in C/C++, making them fast and efficient. They come with Flipper Zero firmware and are stored on the microSD card in compiled form as **FAL (Flipper Application File)** files.
 
 > [!note]
-> You can find the implementation of all supported JS modules in the [Flipper Zero firmware repository](https://github.com/flipperdevices/flipperzero-firmware/tree/dev/applications/system/js_app/modules). Also, check out the [docs for JS modules](#js_modules) for more details.
+> You can find the implementation of all supported JS modules in the [Flipper Zero firmware repository](https://github.com/flipperencore/flipperzero-encore/tree/dev/applications/system/js_app/modules). Also, check out the [docs for JS modules](#js_modules) for more details.
 
 ## How to use JS modules in your app
 

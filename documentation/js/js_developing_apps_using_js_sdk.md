@@ -12,7 +12,7 @@ In this guide, we'll install the JavaScript SDK and learn how to run JavaScript 
 
 ## How to get JavaScript SDK
 
-The JavaScript SDK for Flipper Zero is distributed as an [NPM package](npmjs.com/package/\@flipperdevices/fz-sdk), so you can install it using a package manager like npm, pnpm, or yarn. You'll also need Node.js, a JavaScript runtime environment required for the NPM package manager to work.
+The JavaScript SDK for Encore Firmware is distributed as an [NPM package](npmjs.com/package/\@flipperencore/fz-sdk-encr), so you can install it using a package manager like npm, pnpm, or yarn. You'll also need Node.js, a JavaScript runtime environment required for the NPM package manager to work.
 
 > [!note]
 > In this guide, we'll use **npm**, the default package manager for Node.js.
@@ -23,7 +23,7 @@ Follow these steps:
 
 2. Open a terminal in the folder where you want to store your project.
 
-3. Run the `npx @flipperdevices/create-fz-app@latest` command to create a JavaScript app template and include the JavaScript SDK into it. This command will launch an interactive wizard. You'll need to specify the project name and choose a package manager (in our case, **npm**).
+3. Run the `npx @flipperencore/create-fz-app-encr@latest` command to create a JavaScript app template and include the JavaScript SDK into it. This command will launch an interactive wizard. You'll need to specify the project name and choose a package manager (in our case, **npm**).
 
 You'll now find a JavaScript app template in your project folder, alongside the JavaScript SDK package, all necessary dependencies and configs. The app code will be in the `index.ts` file.
 
@@ -77,7 +77,7 @@ With the Flipper JavaScript SDK, you will be developing in **TypeScript**. This 
 Some things to look out for:
 - Importing modules:
   - Instead of `let module = require("module");`
-  - You will use `import * as module from "@flipperdevices/fz-sdk/module";`
+  - You will use `import * as module from "@flipperencore/fz-sdk-encr/module";`
 - Multiple source code files:
   - The Flipper JavaScript SDK does not yet support having multiple `.ts` files and importing them
   - You can use `load()`, but this will not benefit from TypeScript type checking
