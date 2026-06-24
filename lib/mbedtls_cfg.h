@@ -2,9 +2,9 @@
 
 /**
 * A subset of the mbedTLS configuration options that are relevant to the
-* Flipper Zero firmware and apps. They are built to "mbedtls" library you can 
+* Flipper Zero firmware and apps. They are built to "mbedtls" library you can
 * link your apps with.
-* 
+*
 * If you need more features, either bring the full mbedtls library into your
 * app using "fap_private_libs" or open an issue on GitHub to add them to the
 * default configuration.
@@ -32,17 +32,17 @@
 #define MBEDTLS_CIPHER_PADDING_ZEROS
 
 /* Short Weierstrass curves (supporting ECP, ECDH, ECDSA) */
-// #define MBEDTLS_ECP_DP_SECP192R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP192R1_ENABLED
 // #define MBEDTLS_ECP_DP_SECP224R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
-// #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
+#define MBEDTLS_ECP_DP_SECP384R1_ENABLED
 // #define MBEDTLS_ECP_DP_SECP521R1_ENABLED
-// #define MBEDTLS_ECP_DP_SECP192K1_ENABLED
+#define MBEDTLS_ECP_DP_SECP192K1_ENABLED
 // #define MBEDTLS_ECP_DP_SECP224K1_ENABLED
 // #define MBEDTLS_ECP_DP_SECP256K1_ENABLED
-// #define MBEDTLS_ECP_DP_BP256R1_ENABLED
-// #define MBEDTLS_ECP_DP_BP384R1_ENABLED
-// #define MBEDTLS_ECP_DP_BP512R1_ENABLED
+#define MBEDTLS_ECP_DP_BP256R1_ENABLED
+#define MBEDTLS_ECP_DP_BP384R1_ENABLED
+#define MBEDTLS_ECP_DP_BP512R1_ENABLED
 /* Montgomery curves (supporting ECP) */
 // #define MBEDTLS_ECP_DP_CURVE25519_ENABLED
 // #define MBEDTLS_ECP_DP_CURVE448_ENABLED
