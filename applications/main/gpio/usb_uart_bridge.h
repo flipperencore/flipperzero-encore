@@ -12,12 +12,18 @@ typedef struct {
     uint8_t baudrate_mode;
     uint32_t baudrate;
     uint8_t software_de_re;
+    uint8_t databits;
+    uint8_t parity;
+    uint8_t stopbits;
 } UsbUartConfig;
 
 typedef struct {
     uint32_t rx_cnt;
     uint32_t tx_cnt;
     uint32_t baudrate_cur;
+    uint8_t databits_cur;
+    char parity_cur;
+    float stopbits_cur;
 } UsbUartState;
 
 UsbUartBridge* usb_uart_enable(UsbUartConfig* cfg);

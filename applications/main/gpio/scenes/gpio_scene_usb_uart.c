@@ -35,6 +35,9 @@ void gpio_scene_usb_uart_on_enter(void* context) {
         scene_usb_uart->cfg.flow_pins = 0;
         scene_usb_uart->cfg.baudrate_mode = 0;
         scene_usb_uart->cfg.baudrate = 0;
+        scene_usb_uart->cfg.databits = 0;
+        scene_usb_uart->cfg.parity = 0;
+        scene_usb_uart->cfg.stopbits = 0;
         app->usb_uart_bridge = usb_uart_enable(&scene_usb_uart->cfg);
     }
 

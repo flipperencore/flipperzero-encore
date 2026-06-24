@@ -12,6 +12,9 @@ struct GpioUsbUart {
 
 typedef struct {
     uint32_t baudrate;
+    uint8_t databits;
+    char parity;
+    float stopbits;
     uint32_t tx_cnt;
     uint32_t rx_cnt;
     uint8_t vcp_port;
@@ -42,10 +45,20 @@ static void gpio_usb_uart_draw_callback(Canvas* canvas, void* _model) {
     canvas_draw_str(canvas, 22, 42, temp_str);
 
     if(model->baudrate == 0)
-        snprintf(temp_str, 18, "Baud: ????");
+        snprintf(temp_str, 18, "Baud:????");
     else
-        snprintf(temp_str, 18, "Baud: %lu", model->baudrate);
+        snprintf(temp_str, 18, "Baud:%lu", model->baudrate);
     canvas_draw_str(canvas, 45, 62, temp_str);
+
+    if(model->databits == 0)
+        snprintf(temp_str, 18, "8N1");
+    else if(model->stopbits == 1 || model->stopbits == 2)
+        snprintf(temp_str, 18, "%d%c%d", model->databits, model->parity, (uint8_t)model->stopbits);
+    else if(model->stopbits == 0.5)
+        snprintf(temp_str, 18, "%d%c.5", model->databits, model->parity);
+    else
+        snprintf(temp_str, 18, "%d%c%.01f", model->databits, model->parity);
+    canvas_draw_str_aligned(canvas, 127, 62, AlignRight, AlignBottom, temp_str);
 
     if(model->tx_cnt < 100000000) {
         canvas_set_font(canvas, FontSecondary);
@@ -150,6 +163,9 @@ void gpio_usb_uart_update_state(GpioUsbUart* instance, UsbUartConfig* cfg, UsbUa
         GpioUsbUartModel * model,
         {
             model->baudrate = st->baudrate_cur;
+            model->databits = st->databits_cur;
+            model->parity = st->parity_cur;
+            model->stopbits = st->stopbits_cur;
             model->vcp_port = cfg->vcp_ch;
             model->tx_pin = (cfg->uart_ch == 0) ? (13) : (15);
             model->rx_pin = (cfg->uart_ch == 0) ? (14) : (16);

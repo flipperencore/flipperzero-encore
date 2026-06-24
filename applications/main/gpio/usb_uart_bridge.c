@@ -157,6 +157,107 @@ static void usb_uart_set_baudrate(UsbUartBridge* usb_uart, uint32_t baudrate) {
     }
 }
 
+static void usb_uart_set_framing(UsbUartBridge* usb_uart, uint8_t databits, uint8_t parity, uint8_t stopbits) {
+    struct usb_cdc_line_coding* line_cfg =
+        furi_hal_cdc_get_port_settings(usb_uart->cfg.vcp_ch);
+
+    if(databits == 0) {
+        switch (line_cfg->bDataBits) {
+            case 6:
+                databits = FuriHalSerialDataBits6;
+                break;
+            case 7:
+                databits = FuriHalSerialDataBits7;
+                break;
+            case 8:
+                databits = FuriHalSerialDataBits8;
+                break;
+            default:
+                databits = FuriHalSerialDataBits8;
+                break;
+        }
+    } else {
+        databits -= 1; // First item is "Host", count only the options after
+    }
+
+    if(parity == 0) {
+        switch (line_cfg->bParityType) {
+            case 0: // USB_CDC_NO_PARITY
+                parity = FuriHalSerialParityNone;
+                break;
+            case 1: // USB_CDC_ODD_PARITY
+                parity = FuriHalSerialParityOdd;
+                break;
+            case 2: // USB_CDC_EVEN_PARITY
+                parity = FuriHalSerialParityEven;
+                break;
+            default:
+                databits = FuriHalSerialParityNone;
+                break;
+        }
+    } else {
+        parity -= 1; // First item is "Host", count only the options after
+    }
+
+    if(stopbits == 0) {
+        switch (line_cfg->bCharFormat) {
+            case 0: // USB_CDC_1_STOP_BIT
+                stopbits = FuriHalSerialStopBits1;
+                break;
+            case 1: // USB_CDC_1_5_STOP_BITS
+                stopbits = FuriHalSerialStopBits1_5;
+                break;
+            case 2: // USB_CDC_2_STOP_BITS
+                stopbits = FuriHalSerialStopBits2;
+                break;
+            default:
+                stopbits = FuriHalSerialStopBits1;
+                break;
+        }
+    } else {
+        stopbits -= 1; // First item is "Host", count only the options after
+    }
+
+    // Check for unsupported configurations
+    if (usb_uart->cfg.uart_ch == FuriHalSerialIdLpuart) {
+        // LPUART can't handle half stop bits
+        if (stopbits != FuriHalSerialStopBits0_5 || stopbits == FuriHalSerialStopBits1_5) {
+            stopbits = FuriHalSerialStopBits1;
+        }
+    }
+    if (databits == FuriHalSerialDataBits9) {
+        // 9 data bits only supported without parity
+        parity = FuriHalSerialParityNone;
+    }
+    if (databits == FuriHalSerialDataBits6) {
+        // 6 data bits only supported with parity
+        if (parity == FuriHalSerialParityNone) {
+            parity = FuriHalSerialParityEven;
+        }
+    }
+
+    furi_hal_serial_configure_framing(usb_uart->serial_handle, databits, parity, stopbits);
+
+    // Normalize each into "sane" format and store in current state
+    usb_uart->st.databits_cur = databits + (6 - FuriHalSerialDataBits6);
+    usb_uart->st.parity_cur = (
+        parity == FuriHalSerialParityNone ? 'N' : (
+            parity == FuriHalSerialParityEven ? 'E' : (
+                parity == FuriHalSerialParityOdd ? 'O' : '?'
+            )
+        )
+    );
+    usb_uart->st.stopbits_cur = (
+        stopbits == FuriHalSerialStopBits0_5 ? 0.5 : (
+            stopbits == FuriHalSerialStopBits1 ? 1.0 : (
+                stopbits == FuriHalSerialStopBits1_5 ? 1.5 : (
+                    stopbits == FuriHalSerialStopBits2 ? 2.0 : 0
+                )
+            )
+        )
+    );
+}
+
 static void usb_uart_update_ctrl_lines(UsbUartBridge* usb_uart) {
     if(usb_uart->cfg.flow_pins != 0) {
         furi_assert((size_t)(usb_uart->cfg.flow_pins - 1) < COUNT_OF(flow_pins));
@@ -185,6 +286,7 @@ static int32_t usb_uart_worker(void* context) {
     usb_uart_vcp_init(usb_uart, usb_uart->cfg.vcp_ch);
     usb_uart_serial_init(usb_uart, usb_uart->cfg.uart_ch);
     usb_uart_set_baudrate(usb_uart, usb_uart->cfg.baudrate);
+    usb_uart_set_framing(usb_uart, usb_uart->cfg.databits, usb_uart->cfg.parity, usb_uart->cfg.stopbits);
     if(usb_uart->cfg.flow_pins != 0) {
         furi_assert((size_t)(usb_uart->cfg.flow_pins - 1) < COUNT_OF(flow_pins));
         furi_hal_gpio_init_simple(
@@ -275,11 +377,21 @@ static int32_t usb_uart_worker(void* context) {
                         USB_USART_DE_RE_PIN, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
                 }
             }
+            if (usb_uart->cfg.databits != usb_uart->cfg_new.databits ||
+                usb_uart->cfg.parity != usb_uart->cfg_new.parity ||
+                usb_uart->cfg.stopbits != usb_uart->cfg_new.stopbits) {
+                    usb_uart_set_framing(usb_uart, usb_uart->cfg_new.databits, usb_uart->cfg_new.parity, usb_uart->cfg_new.stopbits);
+                    usb_uart->cfg.databits = usb_uart->cfg_new.databits;
+                    usb_uart->cfg.parity = usb_uart->cfg_new.parity;
+                    usb_uart->cfg.stopbits = usb_uart->cfg_new.stopbits;
+            }
             api_lock_unlock(usb_uart->cfg_lock);
         }
         if(events & WorkerEvtLineCfgSet) {
             if(usb_uart->cfg.baudrate == 0)
                 usb_uart_set_baudrate(usb_uart, usb_uart->cfg.baudrate);
+            if (usb_uart->cfg.databits == 0 || usb_uart->cfg.parity == 0 || usb_uart->cfg.stopbits == 0)
+                usb_uart_set_framing(usb_uart, usb_uart->cfg.databits, usb_uart->cfg.parity, usb_uart->cfg.stopbits);
         }
         if(events & WorkerEvtCtrlLineSet) {
             usb_uart_update_ctrl_lines(usb_uart);

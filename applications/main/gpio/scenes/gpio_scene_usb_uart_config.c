@@ -28,6 +28,10 @@ static const uint32_t baudrate_list[] = {
     921600,
 };
 static const char* software_de_re[] = {"None", "4"};
+static const char* databits[] = {"Host", "6b", "7b", "8b", "9b"};
+static const char* parity[] = {"Host", "None", "Even", "Odd"};
+static const char* stopbits_usart[] = {"Host", "0.5b", "1b", "1.5b", "2b"};
+static const char* stopbits_lpuart[] = {"Host", "1b", "2b"};
 
 bool gpio_scene_usb_uart_cfg_on_event(void* context, SceneManagerEvent event) {
     GpioApp* app = context;
@@ -58,6 +62,29 @@ void line_ensure_flow_invariant(GpioApp* app) {
     }
 }
 
+void line_ensure_stopbits_invariant(GpioApp* app) {
+    // Stop bits 0.5 and 1.5 are unavailable when LPUART is selected. Reset stop bits
+    // to 1 if it is configured to either of those options when LPUART is selected.
+
+    VariableItem* item = app->var_item_stopbits;
+
+    if (app->usb_uart_cfg->uart_ch == FuriHalSerialIdLpuart) {
+        variable_item_set_values_count(item, COUNT_OF(stopbits_lpuart));
+
+        // 0 = "Host" so subtract one when reading
+        uint8_t selected_stopbits = app->usb_uart_cfg->stopbits - 1;
+        if (selected_stopbits == FuriHalSerialStopBits0_5 || selected_stopbits == FuriHalSerialStopBits1_5) {
+            app->usb_uart_cfg->stopbits = 1;
+            selected_stopbits = app->usb_uart_cfg->stopbits - 1;
+
+            variable_item_set_current_value_index(item, selected_stopbits - 1);
+            variable_item_set_current_value_text(item, stopbits_lpuart[selected_stopbits]);
+        }
+    } else {
+        variable_item_set_values_count(item, COUNT_OF(stopbits_usart));
+    }
+}
+
 static void line_vcp_cb(VariableItem* item) {
     GpioApp* app = variable_item_get_context(item);
     furi_assert(app);
@@ -82,6 +109,7 @@ static void line_port_cb(VariableItem* item) {
         app->usb_uart_cfg->uart_ch = FuriHalSerialIdLpuart;
 
     line_ensure_flow_invariant(app);
+    line_ensure_stopbits_invariant(app);
     view_dispatcher_send_custom_event(app->view_dispatcher, GpioUsbUartEventConfigSet);
 }
 
@@ -123,6 +151,57 @@ static void line_baudrate_cb(VariableItem* item) {
         app->usb_uart_cfg->baudrate = 0;
     }
     app->usb_uart_cfg->baudrate_mode = index;
+    view_dispatcher_send_custom_event(app->view_dispatcher, GpioUsbUartEventConfigSet);
+}
+
+static void line_databits_cb(VariableItem* item) {
+    GpioApp* app = variable_item_get_context(item);
+    furi_assert(app);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, databits[index]);
+
+    // 0 = "Host" so subtract (and then add) 1 when reading (or writing, respectively)
+    if ((app->usb_uart_cfg->databits - 1) == FuriHalSerialDataBits6 && (app->usb_uart_cfg->parity - 1) == FuriHalSerialParityNone) {
+        // Parity None is unavailable when 6 data bits are selected. Reset parity to Even.
+        app->usb_uart_cfg->parity = FuriHalSerialParityEven + 1;
+        variable_item_set_current_value_text(app->var_item_parity, parity[app->usb_uart_cfg->parity]);
+    }
+
+    app->usb_uart_cfg->databits = index;
+    view_dispatcher_send_custom_event(app->view_dispatcher, GpioUsbUartEventConfigSet);
+}
+
+static void line_parity_cb(VariableItem* item) {
+    GpioApp* app = variable_item_get_context(item);
+    furi_assert(app);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    variable_item_set_current_value_text(item, parity[index]);
+
+    // 0 = "Host" so subtract (and then add) 1 when reading (or writing, respectively)
+    if ((app->usb_uart_cfg->databits - 1) == FuriHalSerialDataBits6 && (app->usb_uart_cfg->parity - 1) == FuriHalSerialParityNone) {
+        // 6 data bits are unavailable when Parity None is selected. Reset data bits to 8.
+        app->usb_uart_cfg->databits = FuriHalSerialDataBits8 + 1;
+        variable_item_set_current_value_text(app->var_item_databits, databits[app->usb_uart_cfg->databits]);
+    }
+
+    app->usb_uart_cfg->parity = index;
+    view_dispatcher_send_custom_event(app->view_dispatcher, GpioUsbUartEventConfigSet);
+}
+
+static void line_stopbits_cb(VariableItem* item) {
+    GpioApp* app = variable_item_get_context(item);
+    furi_assert(app);
+    uint8_t index = variable_item_get_current_value_index(item);
+
+    if (app->usb_uart_cfg->uart_ch == FuriHalSerialIdLpuart) {
+        variable_item_set_current_value_text(item, stopbits_lpuart[index]);
+    } else {
+        variable_item_set_current_value_text(item, stopbits_usart[index]);
+    }
+
+    app->usb_uart_cfg->stopbits = index;
     view_dispatcher_send_custom_event(app->view_dispatcher, GpioUsbUartEventConfigSet);
 }
 
@@ -171,6 +250,25 @@ void gpio_scene_usb_uart_cfg_on_enter(void* context) {
         var_item_list, "DE/RE Pin", COUNT_OF(software_de_re), line_software_de_re_cb, app);
     variable_item_set_current_value_index(item, app->usb_uart_cfg->software_de_re);
     variable_item_set_current_value_text(item, software_de_re[app->usb_uart_cfg->software_de_re]);
+
+    item = variable_item_list_add(
+        var_item_list, "Data Bits", COUNT_OF(databits), line_databits_cb, app);
+    app->var_item_databits = item;
+    variable_item_set_current_value_index(item, app->usb_uart_cfg->databits);
+    variable_item_set_current_value_text(item, databits[app->usb_uart_cfg->databits]);
+
+    item = variable_item_list_add(
+        var_item_list, "Parity", COUNT_OF(parity), line_parity_cb, app);
+    app->var_item_parity = item;
+    variable_item_set_current_value_index(item, app->usb_uart_cfg->parity);
+    variable_item_set_current_value_text(item, parity[app->usb_uart_cfg->parity]);
+
+    item = variable_item_list_add(
+        var_item_list, "Stop Bits", COUNT_OF(stopbits_usart), line_stopbits_cb, app);
+    app->var_item_stopbits = item;
+    variable_item_set_current_value_index(item, app->usb_uart_cfg->stopbits);
+    variable_item_set_current_value_text(item, stopbits_usart[app->usb_uart_cfg->stopbits]);
+    line_ensure_stopbits_invariant(app);
 
     variable_item_list_set_selected_item(
         var_item_list, scene_manager_get_scene_state(app->scene_manager, GpioAppViewUsbUartCfg));
