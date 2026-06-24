@@ -159,11 +159,17 @@ static void usb_uart_set_baudrate(UsbUartBridge* usb_uart, uint32_t baudrate) {
 
 static void usb_uart_update_ctrl_lines(UsbUartBridge* usb_uart) {
     if(usb_uart->cfg.flow_pins != 0) {
-        furi_assert((size_t)(usb_uart->cfg.flow_pins - 1) < COUNT_OF(flow_pins));
         uint8_t state = furi_hal_cdc_get_ctrl_line_state(usb_uart->cfg.vcp_ch);
 
-        furi_hal_gpio_write(flow_pins[usb_uart->cfg.flow_pins - 1][0], !(state & USB_CDC_BIT_RTS));
-        furi_hal_gpio_write(flow_pins[usb_uart->cfg.flow_pins - 1][1], !(state & USB_CDC_BIT_DTR));
+        bool flow_pins_invert = (usb_uart->cfg.flow_pins - 1) &  1;
+        uint8_t flow_pins_idx = (usb_uart->cfg.flow_pins - 1) >> 1;
+        furi_assert((size_t)(flow_pins_idx) < COUNT_OF(flow_pins));
+
+        if (flow_pins_invert)
+            state = ~state;
+
+        furi_hal_gpio_write(flow_pins[flow_pins_idx][0], state & USB_CDC_BIT_RTS);
+        furi_hal_gpio_write(flow_pins[flow_pins_idx][1], state & USB_CDC_BIT_DTR);
     }
 }
 
@@ -186,11 +192,12 @@ static int32_t usb_uart_worker(void* context) {
     usb_uart_serial_init(usb_uart, usb_uart->cfg.uart_ch);
     usb_uart_set_baudrate(usb_uart, usb_uart->cfg.baudrate);
     if(usb_uart->cfg.flow_pins != 0) {
-        furi_assert((size_t)(usb_uart->cfg.flow_pins - 1) < COUNT_OF(flow_pins));
+        uint8_t flow_pins_idx = (usb_uart->cfg.flow_pins - 1) >> 1;
+        furi_assert((size_t)(flow_pins_idx) < COUNT_OF(flow_pins));
         furi_hal_gpio_init_simple(
-            flow_pins[usb_uart->cfg.flow_pins - 1][0], GpioModeOutputPushPull);
+            flow_pins[flow_pins_idx][0], GpioModeOutputPushPull);
         furi_hal_gpio_init_simple(
-            flow_pins[usb_uart->cfg.flow_pins - 1][1], GpioModeOutputPushPull);
+            flow_pins[flow_pins_idx][1], GpioModeOutputPushPull);
         usb_uart_update_ctrl_lines(usb_uart);
     }
 
@@ -248,18 +255,20 @@ static int32_t usb_uart_worker(void* context) {
                 usb_uart->cfg.baudrate = usb_uart->cfg_new.baudrate;
             }
             if(usb_uart->cfg.flow_pins != usb_uart->cfg_new.flow_pins) {
+                uint8_t flow_pins_idx = (usb_uart->cfg.flow_pins - 1) >> 1;
                 if(usb_uart->cfg.flow_pins != 0) {
                     furi_hal_gpio_init_simple(
-                        flow_pins[usb_uart->cfg.flow_pins - 1][0], GpioModeAnalog);
+                        flow_pins[flow_pins_idx][0], GpioModeAnalog);
                     furi_hal_gpio_init_simple(
-                        flow_pins[usb_uart->cfg.flow_pins - 1][1], GpioModeAnalog);
+                        flow_pins[flow_pins_idx][1], GpioModeAnalog);
                 }
                 if(usb_uart->cfg_new.flow_pins != 0) {
-                    furi_assert((size_t)(usb_uart->cfg_new.flow_pins - 1) < COUNT_OF(flow_pins));
+                    flow_pins_idx = (usb_uart->cfg_new.flow_pins - 1) >> 1;
+                    furi_assert((size_t)(flow_pins_idx) < COUNT_OF(flow_pins));
                     furi_hal_gpio_init_simple(
-                        flow_pins[usb_uart->cfg_new.flow_pins - 1][0], GpioModeOutputPushPull);
+                        flow_pins[flow_pins_idx][0], GpioModeOutputPushPull);
                     furi_hal_gpio_init_simple(
-                        flow_pins[usb_uart->cfg_new.flow_pins - 1][1], GpioModeOutputPushPull);
+                        flow_pins[flow_pins_idx][1], GpioModeOutputPushPull);
                 }
                 usb_uart->cfg.flow_pins = usb_uart->cfg_new.flow_pins;
                 events |= WorkerEvtCtrlLineSet;
@@ -289,8 +298,9 @@ static int32_t usb_uart_worker(void* context) {
     furi_hal_gpio_init(USB_USART_DE_RE_PIN, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
 
     if(usb_uart->cfg.flow_pins != 0) {
-        furi_hal_gpio_init_simple(flow_pins[usb_uart->cfg.flow_pins - 1][0], GpioModeAnalog);
-        furi_hal_gpio_init_simple(flow_pins[usb_uart->cfg.flow_pins - 1][1], GpioModeAnalog);
+        uint8_t flow_pins_idx = (usb_uart->cfg.flow_pins - 1) >> 1;
+        furi_hal_gpio_init_simple(flow_pins[flow_pins_idx][0], GpioModeAnalog);
+        furi_hal_gpio_init_simple(flow_pins[flow_pins_idx][1], GpioModeAnalog);
     }
 
     furi_thread_flags_set(furi_thread_get_id(usb_uart->tx_thread), WorkerEvtTxStop);

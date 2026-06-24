@@ -11,7 +11,7 @@ typedef enum {
 
 static const char* vcp_ch[] = {"0 (CLI)", "1"};
 static const char* uart_ch[] = {"13,14", "15,16"};
-static const char* flow_pins[] = {"None", "2,3", "6,7", "16,15"};
+static const char* flow_pins[] = {"None", "2,3", "~2,~3", "6,7", "~6,~7", "16,15", "~16,~15"};
 static const char* baudrate_mode[] = {"Host"};
 static const uint32_t baudrate_list[] = {
     1200,
@@ -46,7 +46,7 @@ void line_ensure_flow_invariant(GpioApp* app) {
     // selected. This function enforces that invariant by resetting flow_pins
     // to None if it is configured to 16,15 when LPUART is selected.
 
-    uint8_t available_flow_pins = app->usb_uart_cfg->uart_ch == FuriHalSerialIdLpuart ? 3 : 4;
+    uint8_t available_flow_pins = app->usb_uart_cfg->uart_ch == FuriHalSerialIdLpuart ? 6 : 8;
     VariableItem* item = app->var_item_flow;
     variable_item_set_values_count(item, available_flow_pins);
 
